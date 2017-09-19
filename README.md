@@ -4,7 +4,6 @@ This is the template for a PushGP system for Hamilton's CS 307: Genetic Programm
 
 If you choose to make a fork of this to version control your code (which would be a good idea!) please make it private as to not share code with your classmates. Student GitHub users should be able to get free private repositories.
 
-TESTING
 
 ## Usage
 
