@@ -43,7 +43,7 @@
 ;; Utilities
 
 (def empty-push-state
-  {:exec '()
+  {:exec '(2 3 4)
    :integer '()
    :string '()
    :input {:in1 4}})
@@ -55,26 +55,29 @@
   (if (= stack :input)
     (assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
                         item)) 
-    (assoc state stack (conj (state stack) item))
-  ))
+    (assoc state stack (conj (state stack) item))))
 
 (defn pop-stack
   "Removes top item of stack, returning the resulting state."
   [state stack]
-  :STUB
-  )
+  ;;:STUB
+  (if (empty-stack? state stack)
+    state
+    (assoc state stack (rest (state stack)))))
 
 (defn peek-stack
   "Returns top item on a stack. If stack is empty, returns :no-stack-item"
   [state stack]
-  :STUB
-  )
+  ;;:STUB
+  (if (empty-stack? state stack)
+    :no-stack-item
+    (first (state stack))))
 
 (defn empty-stack?
   "Returns true if the stack is empty in state."
   [state stack]
-  :STUB
-  )
+  ;;:STUB
+  (= 0 (count (state stack))))
 
 (defn get-args-from-stacks
   "Takes a state and a list of stacks to take args from. If there are enough args
