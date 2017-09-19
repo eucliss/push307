@@ -46,13 +46,17 @@
   {:exec '()
    :integer '()
    :string '()
-   :input {}})
+   :input {:in1 4}})
 
 (defn push-to-stack
   "Pushes item onto stack in state, returning the resulting state."
   [state stack item]
-  :STUB
-  )
+  ;;:STUB
+  (if (= stack :input)
+    (assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
+                        item)) 
+    (assoc state stack (conj (state stack) item))
+  ))
 
 (defn pop-stack
   "Removes top item of stack, returning the resulting state."
