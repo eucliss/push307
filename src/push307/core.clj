@@ -103,6 +103,20 @@
                  (rest stacks)
                  (conj args (peek-stack state stack))))))))
 
+;; Original one, I didnt like the reverse statement so I took it out and it works fine, gunna ask him tomorrow
+(defn HELMUTH-make-push-instruction
+  "A utility function for making Push instructions. Takes a state, the function
+  to apply to the args, the stacks to take the args from, and the stack to return
+  the result to. Applies the function to the args (taken from the stacks) and pushes
+  the return value onto return-stack in the resulting state."
+  [state function arg-stacks return-stack]
+  (let [args-pop-result (get-args-from-stacks state arg-stacks)]
+    (if (= args-pop-result :not-enough-args)
+      state
+      (let [result (apply function (reverse (:args args-pop-result))) ;; this reverse line dont make sense to me
+            new-state (:state args-pop-result)]
+        (push-to-stack new-state return-stack result)))))
+
 (defn make-push-instruction
   "A utility function for making Push instructions. Takes a state, the function
   to apply to the args, the stacks to take the args from, and the stack to return
@@ -112,7 +126,7 @@
   (let [args-pop-result (get-args-from-stacks state arg-stacks)]
     (if (= args-pop-result :not-enough-args)
       state
-      (let [result (apply function (reverse (:args args-pop-result)))
+      (let [result (apply function (:args args-pop-result))
             new-state (:state args-pop-result)]
         (push-to-stack new-state return-stack result)))))
 
@@ -154,22 +168,24 @@
   "Subtracts the top two integers and leaves result on the integer stack.
   Note: the second integer on the stack should be subtracted from the top integer."
   [state]
-  :STUB
-  )
+  ;;:STUB
+  ;; This one is fucked actually
+  (make-push-instruction state -' [:integer :integer] :integer))
 
 (defn integer_*
   "Multiplies the top two integers and leaves result on the integer stack."
   [state]
-  :STUB
-  )
+  ;;:STUB
+  (make-push-instruction state *' [:integer :integer] :integer))
 
 (defn integer_%
   "This instruction implements 'protected division'.
   In other words, it acts like integer division most of the time, but if the
   denominator is 0, it returns the numerator, to avoid divide-by-zero errors."
   [state]
-  :STUB
-  )
+  ;;:STUB
+  ;; this one might be brok too
+  (make-push-instruction state quot [:integer :integer] :integer))
 
 
 ;;;;;;;;;;
