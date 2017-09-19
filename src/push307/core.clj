@@ -48,29 +48,42 @@
    :string '()
    :input {}})
 
+(def full-state
+  {:exec '(+ = -)
+   :integer '(1 2 3 4)
+   :string '("hi" "hello" "bye")
+   :input {:in1 4 :in2 "yeet"}})
+
 (defn push-to-stack
   "Pushes item onto stack in state, returning the resulting state."
   [state stack item]
-  :STUB
-  )
+  ;;:STUB
+  (if (= stack :input)
+    (assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
+                        item)) 
+    (assoc state stack (conj (state stack) item))))
 
 (defn pop-stack
   "Removes top item of stack, returning the resulting state."
   [state stack]
-  :STUB
-  )
+  ;;:STUB
+  (if (empty-stack? state stack)
+    state
+    (assoc state stack (rest (state stack)))))
 
 (defn peek-stack
   "Returns top item on a stack. If stack is empty, returns :no-stack-item"
   [state stack]
-  :STUB
-  )
+  ;;:STUB
+  (if (empty-stack? state stack)
+    :no-stack-item
+    (first (state stack))))
 
 (defn empty-stack?
   "Returns true if the stack is empty in state."
   [state stack]
-  :STUB
-  )
+  ;;:STUB
+  (= 0 (count (state stack))))
 
 (defn get-args-from-stacks
   "Takes a state and a list of stacks to take args from. If there are enough args
@@ -90,6 +103,20 @@
                  (rest stacks)
                  (conj args (peek-stack state stack))))))))
 
+;; Original one, I didnt like the reverse statement so I took it out and it works fine, gunna ask him tomorrow
+(defn HELMUTH-make-push-instruction
+  "A utility function for making Push instructions. Takes a state, the function
+  to apply to the args, the stacks to take the args from, and the stack to return
+  the result to. Applies the function to the args (taken from the stacks) and pushes
+  the return value onto return-stack in the resulting state."
+  [state function arg-stacks return-stack]
+  (let [args-pop-result (get-args-from-stacks state arg-stacks)]
+    (if (= args-pop-result :not-enough-args)
+      state
+      (let [result (apply function (reverse (:args args-pop-result))) ;; this reverse line dont make sense to me
+            new-state (:state args-pop-result)]
+        (push-to-stack new-state return-stack result)))))
+
 (defn make-push-instruction
   "A utility function for making Push instructions. Takes a state, the function
   to apply to the args, the stacks to take the args from, and the stack to return
@@ -99,7 +126,7 @@
   (let [args-pop-result (get-args-from-stacks state arg-stacks)]
     (if (= args-pop-result :not-enough-args)
       state
-      (let [result (apply function (reverse (:args args-pop-result)))
+      (let [result (apply function (:args args-pop-result))
             new-state (:state args-pop-result)]
         (push-to-stack new-state return-stack result)))))
 
@@ -111,8 +138,13 @@
   "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
-  :STUB
+  ;;:STUB
+  (assoc empty-push-state :input (assoc (empty-push-state :input) :in1 nil)) ;; not sure if this should push nil
+  ;;(assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
+  ;;                      item)) 
   )
+ 
+                      
 
 (defn integer_+
   "Adds the top two integers and leaves result on the integer stack.
@@ -136,22 +168,24 @@
   "Subtracts the top two integers and leaves result on the integer stack.
   Note: the second integer on the stack should be subtracted from the top integer."
   [state]
-  :STUB
-  )
+  ;;:STUB
+  ;; This one is fucked actually
+  (make-push-instruction state -' [:integer :integer] :integer))
 
 (defn integer_*
   "Multiplies the top two integers and leaves result on the integer stack."
   [state]
-  :STUB
-  )
+  ;;:STUB
+  (make-push-instruction state *' [:integer :integer] :integer))
 
 (defn integer_%
   "This instruction implements 'protected division'.
   In other words, it acts like integer division most of the time, but if the
   denominator is 0, it returns the numerator, to avoid divide-by-zero errors."
   [state]
-  :STUB
-  )
+  ;;:STUB
+  ;; this one might be brok too
+  (make-push-instruction state quot [:integer :integer] :integer))
 
 
 ;;;;;;;;;;
@@ -268,7 +302,8 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   "Target function: f(x) = x^3 + x + 3
   Should literally compute this mathematical function."
   [x]
-  :STUB
+  ;;:STUB
+  (+ (* x x x) x 3)
   )
 
 (defn regression-error-function
