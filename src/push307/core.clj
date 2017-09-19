@@ -43,10 +43,16 @@
 ;; Utilities
 
 (def empty-push-state
-  {:exec '(2 3 4)
+  {:exec '()
    :integer '()
    :string '()
-   :input {:in1 4}})
+   :input {}})
+
+(def full-state
+  {:exec '(+ = -)
+   :integer '(1 2 3 4)
+   :string '("hi" "hello" "bye")
+   :input {:in1 4 :in2 "yeet"}})
 
 (defn push-to-stack
   "Pushes item onto stack in state, returning the resulting state."
@@ -118,8 +124,13 @@
   "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
-  :STUB
+  ;;:STUB
+  (assoc empty-push-state :input (assoc (empty-push-state :input) :in1 nil)) ;; not sure if this should push nil
+  ;;(assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
+  ;;                      item)) 
   )
+ 
+                      
 
 (defn integer_+
   "Adds the top two integers and leaves result on the integer stack.
@@ -275,7 +286,8 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   "Target function: f(x) = x^3 + x + 3
   Should literally compute this mathematical function."
   [x]
-  :STUB
+  ;;:STUB
+  (+ (* x x x) x 3)
   )
 
 (defn regression-error-function
