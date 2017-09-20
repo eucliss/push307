@@ -49,7 +49,7 @@
    :input {}})
 
 (def full-state
-  {:exec '(+ = -)
+  {:exec '(integer_+ integer_-)
    :integer '(4 2 3 4)
    :string '("hi" "hello" "bye")
    :input {:in1 4 :in2 "yeet"}})
@@ -210,7 +210,19 @@
   or if the next element is a literal, pushes it onto the correct stack.
   Returns the new Push state."
   [push-state]
-  :STUB
+  ;;:STUB
+
+  ;; resolve function is vital here i believe
+  ;; ((resolve (first (get (get-args-from-stacks full-state '(:exec)) :args))) full-state)
+
+  ;; Also (instance? String "hi") => true
+  ;; (instance? Number 4) => true
+
+  ;;(case 
+    ;;    "" 0
+      ;;  "hello" (count mystr)
+       ;; "default")
+  
   )
 
 (defn interpret-push-program
