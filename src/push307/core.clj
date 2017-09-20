@@ -211,6 +211,8 @@
   Returns the new Push state."
   [push-state]
   ;;:STUB
+  
+  ;;; TODO: Deal with inputs on the exec stack
   (if (not (empty-stack? push-state :exec))
     (let [element (peek-stack push-state :exec)]
       (cond
@@ -220,7 +222,13 @@
                ((resolve (first
                          (get (get-args-from-stacks push-state '(:exec))
                               :args)))
-               push-state) :exec)))))
+               push-state) :exec)))
+    push-state))
+
+(defn load-exec
+  [program state]
+  (assoc state :exec program)
+  )
 
 (defn interpret-push-program
   "Runs the given program starting with the stacks in start-state. Continues
@@ -228,7 +236,11 @@
   program finishes executing."
   [program start-state]
   :STUB
-  )
+  (let [state (assoc start-state :exec (concat program (start-state :exec)))]
+    (loop [state state]
+      (if (empty-stack? state :exec)
+          state
+          (recur (interpret-one-step state))))))
 
 
 ;;;;;;;;;;
