@@ -50,7 +50,7 @@
 
 (def full-state
   {:exec '(integer_+ integer_-)
-   :integer '(4 2 3 4)
+   :integer '(2 1 3 4)
    :string '("hi" "hello" "bye")
    :input {:in1 4 :in2 "yeet"}})
 
@@ -186,7 +186,7 @@
 
 (defn divide_by_zero?
   [state]
-  (= (first (rest (state :integer))) 0 ))
+  (= (first (state :integer))) 0)
   
 
 (defn integer_%
