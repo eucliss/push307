@@ -50,7 +50,7 @@
 
 (def full-state
   {:exec '(integer_+ integer_-)
-   :integer '(4 2 3 4)
+   :integer '(2 1 3 4)
    :string '("hi" "hello" "bye")
    :input {:in1 4 :in2 "yeet"}})
 
@@ -110,7 +110,7 @@
                  (conj args (peek-stack state stack))))))))
 
 ;; Original one, I didnt like the reverse statement so I took it out and it works fine, gunna ask him tomorrow
-(defn HELMUTH-make-push-instruction
+(defn make-push-instruction
   "A utility function for making Push instructions. Takes a state, the function
   to apply to the args, the stacks to take the args from, and the stack to return
   the result to. Applies the function to the args (taken from the stacks) and pushes
@@ -123,7 +123,7 @@
             new-state (:state args-pop-result)]
         (push-to-stack new-state return-stack result)))))
 
-(defn make-push-instruction
+(defn make-push-instruction-TEST
   "A utility function for making Push instructions. Takes a state, the function
   to apply to the args, the stacks to take the args from, and the stack to return
   the result to. Applies the function to the args (taken from the stacks) and pushes
@@ -186,7 +186,7 @@
 
 (defn divide_by_zero?
   [state]
-  (= (first (rest (state :integer))) 0 ))
+  (= (first (state :integer))) 0)
   
 
 (defn integer_%
@@ -213,7 +213,7 @@
   ;;:STUB
 
   ;; resolve function is vital here i believe
-  ;; ((resolve (first (get (get-args-from-stacks full-state '(:exec)) :args))) full-state)
+;;   ((resolve (first (get (get-args-from-stacks full-state '(:exec)) :args))) full-state)
 
   ;; Also (instance? String "hi") => true
   ;; (instance? Number 4) => true
