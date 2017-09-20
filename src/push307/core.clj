@@ -63,6 +63,12 @@
                         item)) 
     (assoc state stack (conj (state stack) item))))
 
+(defn empty-stack?
+  "Returns true if the stack is empty in state."
+  [state stack]
+  ;;:STUB
+  (= 0 (count (state stack))))
+
 (defn pop-stack
   "Removes top item of stack, returning the resulting state."
   [state stack]
@@ -78,12 +84,6 @@
   (if (empty-stack? state stack)
     :no-stack-item
     (first (state stack))))
-
-(defn empty-stack?
-  "Returns true if the stack is empty in state."
-  [state stack]
-  ;;:STUB
-  (= 0 (count (state stack))))
 
 (defn get-args-from-stacks
   "Takes a state and a list of stacks to take args from. If there are enough args
