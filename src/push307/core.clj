@@ -49,8 +49,14 @@
    :input {}})
 
 (def full-state
+  {:exec '(integer_+ integer_-)
+   :integer '(4 2 3 4)
+   :string '("hi" "hello" "bye")
+   :input {:in1 4 :in2 "yeet"}})
+
+(def div-0-state
   {:exec '(+ = -)
-   :integer '(1 2 3 4)
+   :integer '(1 0 3 4)
    :string '("hi" "hello" "bye")
    :input {:in1 4 :in2 "yeet"}})
 
@@ -178,6 +184,11 @@
   ;;:STUB
   (make-push-instruction state *' [:integer :integer] :integer))
 
+(defn divide_by_zero?
+  [state]
+  (= (first (rest (state :integer))) 0 ))
+  
+
 (defn integer_%
   "This instruction implements 'protected division'.
   In other words, it acts like integer division most of the time, but if the
@@ -185,7 +196,9 @@
   [state]
   ;;:STUB
   ;; this one might be brok too
-  (make-push-instruction state quot [:integer :integer] :integer))
+  (if (divide_by_zero? state)
+    (assoc state :integer (conj (get (pop-stack (pop-stack state :integer) :integer) :integer) 0))
+    (make-push-instruction state quot [:integer :integer] :integer)))
 
 
 ;;;;;;;;;;
@@ -197,7 +210,19 @@
   or if the next element is a literal, pushes it onto the correct stack.
   Returns the new Push state."
   [push-state]
-  :STUB
+  ;;:STUB
+
+  ;; resolve function is vital here i believe
+  ;; ((resolve (first (get (get-args-from-stacks full-state '(:exec)) :args))) full-state)
+
+  ;; Also (instance? String "hi") => true
+  ;; (instance? Number 4) => true
+
+  ;;(case 
+    ;;    "" 0
+      ;;  "hello" (count mystr)
+       ;; "default")
+  
   )
 
 (defn interpret-push-program
