@@ -6,7 +6,7 @@
 
 ; An example Push state
 (def example-push-state
-  {:exec '(integer_+ integer_-)
+  {:exec '(0 "hello miller" integer_+ integer_-)
    :integer '(1 2 3 4 5 6 7)
    :string '("abc" "def")
    :input {:in1 4 :in2 6}})
@@ -69,6 +69,12 @@
                         item)) 
     (assoc state stack (conj (state stack) item))))
 
+(defn empty-stack?
+  "Returns true if the stack is empty in state."
+  [state stack]
+  ;;:STUB
+  (= 0 (count (state stack))))
+
 (defn pop-stack
   "Removes top item of stack, returning the resulting state."
   [state stack]
@@ -84,12 +90,6 @@
   (if (empty-stack? state stack)
     :no-stack-item
     (first (state stack))))
-
-(defn empty-stack?
-  "Returns true if the stack is empty in state."
-  [state stack]
-  ;;:STUB
-  (= 0 (count (state stack))))
 
 (defn get-args-from-stacks
   "Takes a state and a list of stacks to take args from. If there are enough args
@@ -110,7 +110,7 @@
                  (conj args (peek-stack state stack))))))))
 
 ;; Original one, I didnt like the reverse statement so I took it out and it works fine, gunna ask him tomorrow
-(defn HELMUTH-make-push-instruction
+(defn make-push-instruction
   "A utility function for making Push instructions. Takes a state, the function
   to apply to the args, the stacks to take the args from, and the stack to return
   the result to. Applies the function to the args (taken from the stacks) and pushes
@@ -123,7 +123,7 @@
             new-state (:state args-pop-result)]
         (push-to-stack new-state return-stack result)))))
 
-(defn make-push-instruction
+(defn tmake-push-instruction
   "A utility function for making Push instructions. Takes a state, the function
   to apply to the args, the stacks to take the args from, and the stack to return
   the result to. Applies the function to the args (taken from the stacks) and pushes
@@ -211,19 +211,16 @@
   Returns the new Push state."
   [push-state]
   ;;:STUB
-
-  ;; resolve function is vital here i believe
-  ;; ((resolve (first (get (get-args-from-stacks full-state '(:exec)) :args))) full-state)
-
-  ;; Also (instance? String "hi") => true
-  ;; (instance? Number 4) => true
-
-  ;;(case 
-    ;;    "" 0
-      ;;  "hello" (count mystr)
-       ;; "default")
-  
-  )
+  (if (not (empty-stack? push-state :exec))
+    (let [element (peek-stack push-state :exec)]
+      (cond
+        (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
+        (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
+        :else (pop-stack
+               ((resolve (first
+                         (get (get-args-from-stacks push-state '(:exec))
+                              :args)))
+               push-state) :exec)))))
 
 (defn interpret-push-program
   "Runs the given program starting with the stacks in start-state. Continues
