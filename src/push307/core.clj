@@ -251,35 +251,67 @@
   a maximum initial program size."
   [instructions max-initial-program-size]
   :STUB
-  )
+  (let [program-size (+ (rand-int max-initial-program-size) 1)]
+    (repeatedly program-size #(rand-nth instructions))))
 
 (defn tournament-selection
   "Selects an individual from the population using a tournament. Returned 
   individual will be a parent in the next generation. Can use a fixed
   tournament size."
-  [population]
+  [population, tournament-size]
   :STUB
-  )
+  (let [tournament-members (repeatedly tournament-size #(rand-nth population))]
+    ;; This finds the individual with the smallest total-error 
+    (apply min-key #(% :total-error) tournament-members)))
 
+(defn fifty-fifty
+  ([] (= (rand-int 2) 0))
+  ([x] (= (rand-int 2) 0)))
+
+(defn five-percent?
+  ([] (= (rand-int 20) 10))
+  ([x] (not (= (rand-int 20) 10))))
+  
 (defn crossover
   "Crosses over two programs (note: not individuals) using uniform crossover.
   Returns child program."
   [prog-a prog-b]
   :STUB
-  )
+  (loop [prog-a prog-a
+         prog-b prog-b
+         new '()]
+    (if (empty? prog-a)
+      (concat new (filter fifty-fifty prog-b))
+      (if (empty? prog-b)
+        (concat new (filter fifty-fifty prog-a))
+        (recur (rest prog-a)
+               (rest prog-b)
+               (if (= (rand-int 2) 0)
+                 (apply list (conj (apply vector new) (first prog-a)))
+                 (apply list (conj (apply vector new) (first prog-b)))))))))
 
 (defn uniform-addition
   "Randomly adds new instructions before every instruction (and at the end of
   the program) with some probability. Returns child program."
-  [prog]
+  [prog
+   instructions]
   :STUB
-  )
+  ;; Added instructions as a parameter
+  (let [child (reduce concat
+                      (map (fn [x]
+                             (if (five-percent?)
+                               (list x (nth instructions (rand-int (count instructions))))
+                               (list x))) prog))]
+    (if (five-percent?)
+      (conj child (nth instructions (rand-int (count instructions))))
+      (child))))
+
 
 (defn uniform-deletion
   "Randomly deletes instructions from program at some rate. Returns child program."
   [prog]
   :STUB
-  )
+  (filter five-percent? prog))
 
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
@@ -288,6 +320,7 @@
   25% to uniform-addition, and 25% to uniform-deletion."
   [population]
   :STUB
+  
   )
 
 (defn report
