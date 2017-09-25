@@ -237,7 +237,7 @@
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
-        (keyword? element) (push-input push-state element)
+        ;;(keyword? element) (push-input push-state element)
         :else (pop-stack
                ((resolve (first
                          (get (get-args-from-stacks push-state '(:exec))
