@@ -148,11 +148,21 @@
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
   ;;:STUB
-  (assoc empty-push-state :input (assoc (empty-push-state :input) :in1 nil)) ;; not sure if this should push nil
+  ;; @ Miller I think you did this wrong, it just returns an empty state basically....
+  ;;(assoc empty-push-state :input (assoc (empty-push-state :input) :in1 nil)) ;; not sure if this should push nil
+  
   ;;(assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
   ;;                      item)) 
   )
- 
+
+(defn push-input
+  "Takes a state and an input keyword and pushes the mapping of that input keyword to the
+  top of the exec stack. We added this, not sure why you would have only one function for inputs
+  or why you would set the input to nil"
+  [state
+   input]
+  (let [input-val ((state :input) input)]
+    (push-to-stack state :exec input-val)))
                       
 
 (defn integer_+
@@ -227,6 +237,7 @@
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
+        (keyword? element) (push-input push-state element)
         :else (pop-stack
                ((resolve (first
                          (get (get-args-from-stacks push-state '(:exec))
