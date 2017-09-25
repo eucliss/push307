@@ -272,6 +272,10 @@
   ([] (= (rand-int 20) 10))
   ([x] (not (= (rand-int 20) 10))))
   
+(defn prob-pick
+  ([prob] (= (rand-int (int (/ 100 prob))) 0))
+  ([prob x] (= (rand-int (int (/ 100 prob))) 0)))
+
 (defn crossover
   "Crosses over two programs (note: not individuals) using uniform crossover.
   Returns child program."
@@ -281,9 +285,9 @@
          prog-b prog-b
          new '()]
     (if (empty? prog-a)
-      (concat new (filter fifty-fifty prog-b))
+      (concat new (filter #(prob-pick 50) prog-b))
       (if (empty? prog-b)
-        (concat new (filter fifty-fifty prog-a))
+        (concat new (filter #(prob-pick 50) prog-a))
         (recur (rest prog-a)
                (rest prog-b)
                (if (= (rand-int 2) 0)
@@ -299,10 +303,10 @@
   ;; Added instructions as a parameter
   (let [child (reduce concat
                       (map (fn [x]
-                             (if (five-percent?)
+                             (if (prob-pick 5)
                                (list x (nth instructions (rand-int (count instructions))))
                                (list x))) prog))]
-    (if (five-percent?)
+    (if (prob-pick 5)
       (conj child (nth instructions (rand-int (count instructions))))
       (child))))
 
@@ -311,7 +315,7 @@
   "Randomly deletes instructions from program at some rate. Returns child program."
   [prog]
   :STUB
-  (filter five-percent? prog))
+  (filter #(not (prob-pick 5)) prog))
 
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
