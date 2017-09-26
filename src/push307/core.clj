@@ -267,7 +267,8 @@
   "Selects an individual from the population using a tournament. Returned 
   individual will be a parent in the next generation. Can use a fixed
   tournament size."
-  [population, tournament-size]
+  [population
+   tournament-size]
   :STUB
   (let [tournament-members (repeatedly tournament-size #(rand-nth population))]
     ;; This finds the individual with the smallest total-error 
@@ -309,7 +310,7 @@
                                (list x))) prog))]
     (if (prob-pick 0.05)
       (conj child (nth instructions (rand-int (count instructions))))
-      (child))))
+      child)))
 
 
 (defn uniform-deletion
@@ -318,15 +319,30 @@
   :STUB
   (filter #(not (prob-pick 0.05)) prog))
 
+(defn prog-to-individual
+  [prog]
+  {:program prog
+   :errors '[]
+   :total-error 0})
+
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
   a child individual (note: not program). Chooses which genetic operator
   to use probabilistically. Gives 50% chance to crossover,
   25% to uniform-addition, and 25% to uniform-deletion."
-  [population]
+  [population
+   tournament-size]
   :STUB
-  
-  )
+  (let [seed (rand)
+        parent1 (tournament-selection population tournament-size)
+        parent2 (tournament-selection population tournament-size)]
+    (cond
+      (< seed 0.5) (prog-to-individual
+                    (crossover parent1 parent2))    
+      (and (>= seed 0.5) (< 0.75)) (prog-to-individual
+                                    (uniform-addition parent1 parent2))
+      (>= seed 0.75) (prog-to-individual
+                      (uniform-deletion parent1)))))
 
 (defn report
   "Reports information on the population each generation. Should look something
@@ -343,7 +359,17 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   "
   [population generation]
   :STUB
-  )
+  (println "-------------------------------------------------------")
+  (printf  "                    Report for Generation %s           " generation)
+  (println "-------------------------------------------------------")
+
+  (let [best-prog (apply min-key #(% :total-error) population)]
+    (printf "Best program: %s" (best-prog :program))
+    (printf "Best program size: %s" (count (best-prog :program)))
+    (printf "Best total error: %s" (best-prog :total-error))
+    (printf "Best errors: %s" (best-prog :errors))))
+
+
 
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
