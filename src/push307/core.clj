@@ -15,6 +15,9 @@
 (def example-push-program
   '(3 5 integer_* "hello" 4 "world" integer_-))
 
+(def example-push-program2
+  '(3 5 integer_* ("hello" 4) "world" integer_-))
+
 ; An example individual in the population
 ; Made of a map containing, at mimimum, a program, the errors for
 ; the program, and a total error
@@ -145,11 +148,21 @@
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
   ;;:STUB
-  (assoc empty-push-state :input (assoc (empty-push-state :input) :in1 nil)) ;; not sure if this should push nil
+  ;; @ Miller I think you did this wrong, it just returns an empty state basically....
+  ;;(assoc empty-push-state :input (assoc (empty-push-state :input) :in1 nil)) ;; not sure if this should push nil
+  
   ;;(assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
   ;;                      item)) 
   )
- 
+
+(defn push-input
+  "Takes a state and an input keyword and pushes the mapping of that input keyword to the
+  top of the exec stack. We added this, not sure why you would have only one function for inputs
+  or why you would set the input to nil"
+  [state
+   input]
+  (let [input-val ((state :input) input)]
+    (push-to-stack state :exec input-val)))
                       
 
 (defn integer_+
@@ -204,6 +217,10 @@
 ;;;;;;;;;;
 ;; Interpreter
 
+(defn load-exec
+  [program state]
+  (assoc state :exec (concat program (state :exec))))
+
 (defn interpret-one-step
   "Helper function for interpret-push-program.
   Takes a Push state and executes the next instruction on the exec stack,
@@ -215,9 +232,12 @@
   ;;; TODO: Deal with inputs on the exec stack
   (if (not (empty-stack? push-state :exec))
     (let [element (peek-stack push-state :exec)]
+      (println push-state)
       (cond
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
+        (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
+        ;;(keyword? element) (push-input push-state element)
         :else (pop-stack
                ((resolve (first
                          (get (get-args-from-stacks push-state '(:exec))
@@ -225,18 +245,13 @@
                push-state) :exec)))
     push-state))
 
-(defn load-exec
-  [program state]
-  (assoc state :exec program)
-  )
-
 (defn interpret-push-program
   "Runs the given program starting with the stacks in start-state. Continues
   until the exec stack is empty. Returns the state of the stacks after the
   program finishes executing."
   [program start-state]
   :STUB
-  (let [state (assoc start-state :exec (concat program (start-state :exec)))]
+  (let [state (load-exec program start-state)]
     (loop [state state]
       (if (empty-stack? state :exec)
           state
