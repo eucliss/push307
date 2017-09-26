@@ -148,12 +148,7 @@
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
   ;;:STUB
-  ;; @ Miller I think you did this wrong, it just returns an empty state basically....
-  ;;(assoc empty-push-state :input (assoc (empty-push-state :input) :in1 nil)) ;; not sure if this should push nil
-  
-  ;;(assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
-  ;;                      item)) 
-  )
+  (push-to-stack state :exec ((state :input) :in1)))
 
 (defn push-input
   "Takes a state and an input keyword and pushes the mapping of that input keyword to the
@@ -237,7 +232,6 @@
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
-        ;;(keyword? element) (push-input push-state element)
         :else (pop-stack
                ((resolve (first
                          (get (get-args-from-stacks push-state '(:exec))
@@ -279,17 +273,9 @@
     ;; This finds the individual with the smallest total-error 
     (apply min-key #(% :total-error) tournament-members)))
 
-(defn fifty-fifty
-  ([] (= (rand-int 2) 0))
-  ([x] (= (rand-int 2) 0)))
-
-(defn five-percent?
-  ([] (= (rand-int 20) 10))
-  ([x] (not (= (rand-int 20) 10))))
-  
 (defn prob-pick
-  ([prob] (= (rand-int (int (/ 100 prob))) 0))
-  ([prob x] (= (rand-int (int (/ 100 prob))) 0)))
+  ([prob] (< (rand) prob))
+  ([prob x] (prob-pick prob)))
 
 (defn crossover
   "Crosses over two programs (note: not individuals) using uniform crossover.
@@ -300,9 +286,9 @@
          prog-b prog-b
          new '()]
     (if (empty? prog-a)
-      (concat new (filter #(prob-pick 50) prog-b))
+      (concat new (filter #(prob-pick 0.5) prog-b))
       (if (empty? prog-b)
-        (concat new (filter #(prob-pick 50) prog-a))
+        (concat new (filter #(prob-pick 0.5) prog-a))
         (recur (rest prog-a)
                (rest prog-b)
                (if (= (rand-int 2) 0)
@@ -318,10 +304,10 @@
   ;; Added instructions as a parameter
   (let [child (reduce concat
                       (map (fn [x]
-                             (if (prob-pick 5)
+                             (if (prob-pick 0.05)
                                (list x (nth instructions (rand-int (count instructions))))
                                (list x))) prog))]
-    (if (prob-pick 5)
+    (if (prob-pick 0.05)
       (conj child (nth instructions (rand-int (count instructions))))
       (child))))
 
@@ -330,7 +316,7 @@
   "Randomly deletes instructions from program at some rate. Returns child program."
   [prog]
   :STUB
-  (filter #(not (prob-pick 5)) prog))
+  (filter #(not (prob-pick 0.05)) prog))
 
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
