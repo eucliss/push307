@@ -148,12 +148,7 @@
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
   ;;:STUB
-  ;; @ Miller I think you did this wrong, it just returns an empty state basically....
-  ;;(assoc empty-push-state :input (assoc (empty-push-state :input) :in1 nil)) ;; not sure if this should push nil
-  
-  ;;(assoc state stack (assoc (state stack) (keyword (str "in" (+ 1 (count (keys (state stack))))))
-  ;;                      item)) 
-  )
+  (push-to-stack state :exec ((state :input) :in1)))
 
 (defn push-input
   "Takes a state and an input keyword and pushes the mapping of that input keyword to the
@@ -237,7 +232,6 @@
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
-        ;;(keyword? element) (push-input push-state element)
         :else (pop-stack
                ((resolve (first
                          (get (get-args-from-stacks push-state '(:exec))
@@ -273,23 +267,16 @@
   "Selects an individual from the population using a tournament. Returned 
   individual will be a parent in the next generation. Can use a fixed
   tournament size."
-  [population, tournament-size]
+  [population
+   tournament-size]
   :STUB
   (let [tournament-members (repeatedly tournament-size #(rand-nth population))]
     ;; This finds the individual with the smallest total-error 
     (apply min-key #(% :total-error) tournament-members)))
 
-(defn fifty-fifty
-  ([] (= (rand-int 2) 0))
-  ([x] (= (rand-int 2) 0)))
-
-(defn five-percent?
-  ([] (= (rand-int 20) 10))
-  ([x] (not (= (rand-int 20) 10))))
-  
 (defn prob-pick
-  ([prob] (= (rand-int (int (/ 100 prob))) 0))
-  ([prob x] (= (rand-int (int (/ 100 prob))) 0)))
+  ([prob] (< (rand) prob))
+  ([prob x] (prob-pick prob)))
 
 (defn crossover
   "Crosses over two programs (note: not individuals) using uniform crossover.
@@ -300,9 +287,9 @@
          prog-b prog-b
          new '()]
     (if (empty? prog-a)
-      (concat new (filter #(prob-pick 50) prog-b))
+      (concat new (filter #(prob-pick 0.5) prog-b))
       (if (empty? prog-b)
-        (concat new (filter #(prob-pick 50) prog-a))
+        (concat new (filter #(prob-pick 0.5) prog-a))
         (recur (rest prog-a)
                (rest prog-b)
                (if (= (rand-int 2) 0)
@@ -318,29 +305,44 @@
   ;; Added instructions as a parameter
   (let [child (reduce concat
                       (map (fn [x]
-                             (if (prob-pick 5)
+                             (if (prob-pick 0.05)
                                (list x (nth instructions (rand-int (count instructions))))
                                (list x))) prog))]
-    (if (prob-pick 5)
+    (if (prob-pick 0.05)
       (conj child (nth instructions (rand-int (count instructions))))
-      (child))))
+      child)))
 
 
 (defn uniform-deletion
   "Randomly deletes instructions from program at some rate. Returns child program."
   [prog]
   :STUB
-  (filter #(not (prob-pick 5)) prog))
+  (filter #(not (prob-pick 0.05)) prog))
+
+(defn prog-to-individual
+  [prog]
+  {:program prog
+   :errors '[]
+   :total-error 0})
 
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
   a child individual (note: not program). Chooses which genetic operator
   to use probabilistically. Gives 50% chance to crossover,
   25% to uniform-addition, and 25% to uniform-deletion."
-  [population]
+  [population
+   tournament-size]
   :STUB
-  
-  )
+  (let [seed (rand)
+        parent1 (tournament-selection population tournament-size)
+        parent2 (tournament-selection population tournament-size)]
+    (cond
+      (< seed 0.5) (prog-to-individual
+                    (crossover parent1 parent2))    
+      (and (>= seed 0.5) (< 0.75)) (prog-to-individual
+                                    (uniform-addition parent1 parent2))
+      (>= seed 0.75) (prog-to-individual
+                      (uniform-deletion parent1)))))
 
 (defn report
   "Reports information on the population each generation. Should look something
@@ -357,7 +359,17 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   "
   [population generation]
   :STUB
-  )
+  (println "-------------------------------------------------------")
+  (printf  "                    Report for Generation %s           " generation)
+  (println "-------------------------------------------------------")
+
+  (let [best-prog (apply min-key #(% :total-error) population)]
+    (printf "Best program: %s" (best-prog :program))
+    (printf "Best program size: %s" (count (best-prog :program)))
+    (printf "Best total error: %s" (best-prog :total-error))
+    (printf "Best errors: %s" (best-prog :errors))))
+
+
 
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
