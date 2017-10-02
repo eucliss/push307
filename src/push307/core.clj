@@ -247,7 +247,7 @@
       (cond
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
-        (= 'in1 element) (in1 (pop-stack push-state :exec))
+        (= 'in1 element) (in1 push-state)
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
         :else (pop-stack
                ((eval (first
@@ -280,13 +280,16 @@
   (let [program-size (+ (rand-int max-initial-program-size) 1)]
     (repeatedly program-size #(rand-nth instructions))))
 
-(def testing-population
-  (init-population 3 3))
+;;(def testing-population
+;;  (init-population 3 3))
 
-(def testing-errors
-  (map #(regression-error-function %) testing-population) )
+;;(def testing-errors
 
-;; testing: (tournament-selection testing-errors 3)
+;; testing: (tournament-selection (map #(regression-error-function %) (init-population 3 3)) 3)
+
+;;(def testing-pop
+;;  (map #(regression-error-function %) (init-population 5 15)))
+
 (defn tournament-selection
   "Selects an individual from the population using a tournament. Returned 
   individual will be a parent in the next generation. Can use a fixed
@@ -294,6 +297,7 @@
   [population
    tournament-size]
   :STUB
+  (println population)
   (let [tournament-members (repeatedly tournament-size #(rand-nth population))]
     ;; This finds the individual with the smallest total-error 
     (apply min-key #(% :total-error) tournament-members)))
@@ -302,10 +306,22 @@
   ([prob] (< (rand) prob))
   ([prob x] (prob-pick prob)))
 
+(def test-prog-A
+  {:exec '(in1 in2 in3 in4)
+   :integer '(1 2 3 4 5 6 7)
+   :string '("abc" "def")
+   :input {:in1 4 :in2 6}})
+(def test-prog-B
+  {:exec '(in5 "hello miller" integer_+ integer_-)
+   :integer '(1 2 3 4 5 6 7)
+   :string '("abc" "def")
+   :input {:in1 4 :in2 6}})
+
 (defn crossover
   "Crosses over two programs (note: not individuals) using uniform crossover.
   Returns child program."
-  [prog-a prog-b]
+  [prog-a
+   prog-b]
   :STUB
   (loop [prog-a prog-a
          prog-b prog-b
