@@ -388,7 +388,7 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
 
 (defn init-population
   [size max-program-size]
-  (take size (repeatedly #(make-random-push-program instructions max-program-size))))
+  (map #(prog-to-individual %) (take size (repeatedly #(make-random-push-program instructions max-program-size)))))
 
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
@@ -423,6 +423,48 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   (+ (* x x x) x 3)
   )
 
+(def target-push-program
+  '(in1 in1 in1 integer_* integer_* integer_* in1 3 integer_+ integer_+))
+
+(def testing-prog
+  '(in1 1 integer_+))
+
+(def init-ind
+  (prog-to-individual testing-prog))
+
+(def test-cases
+  (list -3 -2 -1 0 1 2 3))
+
+(defn abs
+  [x]
+  (if (< x 0)
+    (*' -1 x)
+    x))
+
+(defn evaluate-one-case
+  [individual state value]
+  (interpret-push-program (:program individual) (push-to-stack state :input value)))
+
+(defn abs-difference-in-error-lists
+  [l1 l2]
+  (println l1)
+  (println (first l1))
+  (loop [l1 l1
+         l2 l2
+         final '()]
+    (if (= (count l1) 0)
+      (reverse final)
+      (recur (rest l1)
+             (rest l2)
+             (conj final (abs (- (first l1) (first l2))))))))
+
+(defn get-error-list
+  [individual]
+  (map #(if (= (:integer %) nil)
+             1000
+             (first (:integer %)))
+             (map #(evaluate-one-case individual empty-push-state %) test-cases)))
+
 (defn regression-error-function
   "Takes an individual and evaluates it on some test cases. For each test case,
   runs program with the input set to :in1 in the :input map part of the Push state.
@@ -435,7 +477,22 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   on the integer stack."
   [individual]
   :STUB
-  )
+  (let [target-list (map #(target-function %) test-cases)
+        program-list (get-error-list individual)
+        errors (difference-in-error-lists target-list program-list)
+        ]
+    {:program (:program individual)
+     :errors errors
+     :total-error (reduce + errors)}))
+  ;; (push-to-stack empty-push-state :input 4)
+  ;; (interpret-push-program (:program empty-ind) (push-to-stack empty-push-state :input 4))
+  ;; (assoc init-ind :errors (into (vector) (difference-in-error-lists '(1 2 3) '(4 4 4))))
+
+  ;; Push the input to empty state
+  ;; evaluate the program in that state
+  ;; use last item in int stack as compare value
+  ;; compare it to errors list
+  
 
 
 ;;;;;;;;;;
