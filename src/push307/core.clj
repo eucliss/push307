@@ -163,7 +163,8 @@
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
   ;;:STUB
-  (assoc state :exec (conj (rest (state :exec)) ((state :input) :in1))))
+  (push-to-stack (pop-stack state :exec) :exec ((state :input) :in1)))
+  ;;(assoc state :exec (conj (rest (state :exec)) ((state :input) :in1))))
 
 (defn push-input
   "Takes a state and an input keyword and pushes the mapping of that input keyword to the
