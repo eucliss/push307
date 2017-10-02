@@ -280,6 +280,13 @@
   (let [program-size (+ (rand-int max-initial-program-size) 1)]
     (repeatedly program-size #(rand-nth instructions))))
 
+(def testing-population
+  (init-population 3 3))
+
+(def testing-errors
+  (map #(regression-error-function %) testing-population) )
+
+;; testing: (tournament-selection testing-errors 3)
 (defn tournament-selection
   "Selects an individual from the population using a tournament. Returned 
   individual will be a parent in the next generation. Can use a fixed
