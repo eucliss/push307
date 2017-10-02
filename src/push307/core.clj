@@ -163,7 +163,7 @@
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
   ;;:STUB
-  (push-to-stack state :exec ((state :input) :in1)))
+  (assoc state :exec (conj (rest (state :exec)) ((state :input) :in1))))
 
 (defn push-input
   "Takes a state and an input keyword and pushes the mapping of that input keyword to the
@@ -479,7 +479,7 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   :STUB
   (let [target-list (map #(target-function %) test-cases)
         program-list (get-error-list individual)
-        errors (difference-in-error-lists target-list program-list)
+        errors (abs-difference-in-error-lists target-list program-list)
         ]
     {:program (:program individual)
      :errors errors
