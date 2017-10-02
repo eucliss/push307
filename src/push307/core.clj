@@ -11,9 +11,24 @@
    :string '("abc" "def")
    :input {:in1 4 :in2 6}})
 
+(def example-push-state-input
+  {:exec '(in1 "hello miller" integer_+ integer_-)
+   :integer '(1 2 3 4 5 6 7)
+   :string '("abc" "def")
+   :input {:in1 4 :in2 6}})
+
 ; An example Push program
 (def example-push-program
   '(3 5 integer_* "hello" 4 "world" integer_-))
+
+(def example-push-program-input
+  '(3 5 integer_* "hello" in1 "world" integer_-))
+
+(def empty-state-with-in1
+  {:exec '()
+   :integer '()
+   :string '()
+   :input {:in1 4}})
 
 (def example-push-program2
   '(3 5 integer_* ("hello" 4) "world" integer_-))
@@ -155,7 +170,7 @@
   top of the exec stack. We added this, not sure why you would have only one function for inputs
   or why you would set the input to nil"
   [state
-   input]
+   input] ;; input here is :in1 not something else like a string or int
   (let [input-val ((state :input) input)]
     (push-to-stack state :exec input-val)))
                       
@@ -216,6 +231,8 @@
   [program state]
   (assoc state :exec (concat program (state :exec))))
 
+
+
 (defn interpret-one-step
   "Helper function for interpret-push-program.
   Takes a Push state and executes the next instruction on the exec stack,
@@ -223,17 +240,16 @@
   Returns the new Push state."
   [push-state]
   ;;:STUB
-  
-  ;;; TODO: Deal with inputs on the exec stack
   (if (not (empty-stack? push-state :exec))
     (let [element (peek-stack push-state :exec)]
       (println push-state)
       (cond
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
+        (= 'in1 element) (in1 (pop-stack push-state :exec))
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
         :else (pop-stack
-               ((resolve (first
+               ((eval (first
                          (get (get-args-from-stacks push-state '(:exec))
                               :args)))
                push-state) :exec)))
@@ -370,6 +386,9 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
     (printf "Best errors: %s" (best-prog :errors))))
 
 
+(defn init-population
+  [size max-program-size]
+  (take size (repeatedly #(make-random-push-program instructions max-program-size))))
 
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
