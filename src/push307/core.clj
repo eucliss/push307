@@ -472,16 +472,18 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   [{:keys [population-size max-generations error-function instructions max-initial-program-size]}]
   :STUB
   (loop [count 0
-         population (init-population population-size max-initial-program-size)]
-    ;;(report population count)
+         population (map #(error-function %) (init-population population-size max-initial-program-size))]
+    (report population count)
     (if (>= count max-generations)
-      (regression-error-function (first population))
-      (recur (+ count 1)
-             (map #(prog-to-individual %) (get-new-population (map #(error-function %) population) population-size 6))
+      nil
+      (if (= 0 (apply min-key #(% :total-error) population) :total-error)
+        :SUCCESS
+        (recur (+ count 1)
+               (map #(error-function (prog-to-individual %)) (get-new-population (map #(error-function %) population) population-size 6))
 
 
 
-             ))))
+             )))))
 
 
 ;;;;;;;;;;
