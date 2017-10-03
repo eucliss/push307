@@ -174,13 +174,21 @@
    input] ;; input here is :in1 not something else like a string or int
   (let [input-val ((state :input) input)]
     (push-to-stack state :exec input-val)))
+
+(def single-int-state
+  {:exec '()
+   :integer '(1)
+   :string '()
+   :input {:in1 4}})
                       
 
 (defn integer_+
   "Adds the top two integers and leaves result on the integer stack.
   If integer stack has fewer than two elements, noops."
   [state]
-  (make-push-instruction state +' [:integer :integer] :integer))
+  (if (< (count (get state :integer)) 2)
+    (pop-stack state :exec)
+    (make-push-instruction state +' [:integer :integer] :integer)))
 
 ;;;; This is an example of what would be necessary to implement integer_+
 ;;;; without the useful helper function make-push-instruction.
@@ -199,14 +207,18 @@
   Note: the second integer on the stack should be subtracted from the top integer."
   [state]
   ;;:STUB
-  ;; This one is fucked actually
-  (make-push-instruction state -' [:integer :integer] :integer))
+  ;; make null pointers stop plz
+  (if (< (count (get state :integer)) 2)
+    (pop-stack state :exec)
+    (make-push-instruction state -' [:integer :integer] :integer)))
 
 (defn integer_*
   "Multiplies the top two integers and leaves result on the integer stack."
   [state]
   ;;:STUB
-  (make-push-instruction state *' [:integer :integer] :integer))
+  (if (< (count (get state :integer)) 2)
+    (pop-stack state :exec)
+    (make-push-instruction state *' [:integer :integer] :integer)))
 
 (defn divide_by_zero?
   [state]
@@ -220,9 +232,11 @@
   [state]
   ;;:STUB
   ;; this one might be brok too
-  (if (divide_by_zero? state)
-    (assoc state :integer (conj (get (pop-stack (pop-stack state :integer) :integer) :integer) 0))
-    (make-push-instruction state quot [:integer :integer] :integer)))
+  (if (< (count (get state :integer)) 2)
+    (pop-stack state :exec)
+    (if (divide_by_zero? state)
+      (assoc state :integer (conj (get (pop-stack (pop-stack state :integer) :integer) :integer) 0))
+      (make-push-instruction state quot [:integer :integer] :integer))))
 
 
 ;;;;;;;;;;
@@ -243,7 +257,6 @@
   ;;:STUB
   (if (not (empty-stack? push-state :exec))
     (let [element (peek-stack push-state :exec)]
-      (println push-state)
       (cond
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
@@ -297,7 +310,6 @@
   [population
    tournament-size]
   :STUB
-  (println population)
   (let [tournament-members (repeatedly tournament-size #(rand-nth population))]
     ;; This finds the individual with the smallest total-error 
     (apply min-key #(% :total-error) tournament-members)))
@@ -330,9 +342,9 @@
          prog-b prog-b
          new '()]
     (if (empty? prog-a)
-      (concat new (filter #(prob-pick 0.5) prog-b))
+      (concat new (filter #(prob-pick 0.5 %) prog-b))
       (if (empty? prog-b)
-        (concat new (filter #(prob-pick 0.5) prog-a))
+        (concat new (filter #(prob-pick 0.5 %) prog-a))
         (recur (rest prog-a)
                (rest prog-b)
                (if (= (rand-int 2) 0)
@@ -346,17 +358,16 @@
    instructions]
   :STUB
   ;; Added instructions as a parameter
-  (println "UNIFORM ADDITION")
-  (println prog)
-  (println instructions)
-  (let [child (reduce concat
-                      (map (fn [x]
-                             (if (prob-pick 0.05)
-                               (list x (nth instructions (rand-int (count instructions))))
-                               (list x))) prog))]
-    (if (prob-pick 0.05)
-      (conj child (nth instructions (rand-int (count instructions))))
-      child)))
+  (if (= prog ())
+    prog
+    (let [child (reduce concat
+                        (map (fn [x]
+                               (if (prob-pick 0.05)
+                                 (list x (nth instructions (rand-int (count instructions))))
+                                 (list x))) prog))]
+      (if (prob-pick 0.05)
+        (conj child (nth instructions (rand-int (count instructions))))
+        child))))
 
 
 ;;(defn uniform-deletion
@@ -381,8 +392,6 @@
 
 (defn vector-to-individual
   [ls]
-  (println "HELLO")
-  (println ls)
   (prog-to-individual
    (nth (first ls) 1)
    (nth (nth ls 1) 1)
@@ -399,13 +408,13 @@
   [population
    tournament-size]
   :STUB
-  (let [seed 0.3
-        parent1 (tournament-selection population tournament-size)
-        parent2 (tournament-selection population tournament-size)]
+  (let [seed (rand)
+        parent1 (into () (:program (tournament-selection population tournament-size)))
+        parent2 (into () (:program (tournament-selection population tournament-size)))]
     (cond
-      (< seed 0.5) (crossover (:program parent1) (:program parent2))
-      (and (>= seed 0.5) (< 0.75)) (vector-to-individual (uniform-addition (:program parent1) (:program parent2)))
-      (>= seed 0.75) (vector-to-individual (uniform-deletion (:program parent1))))))
+      (< seed 0.5) (crossover parent1 parent2)
+      (and (>= seed 0.5) (< 0.75)) (uniform-addition parent1 parent2)
+      (>= seed 0.75) (uniform-deletion parent1))))
 
 (defn report
   "Reports information on the population each generation. Should look something
@@ -466,9 +475,9 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
          population (init-population population-size max-initial-program-size)]
     ;;(report population count)
     (if (>= count max-generations)
-      nil
+      population
       (recur (+ count 1)
-             (get-new-population (map #(error-function %) population) population-size 6)
+             (map #(prog-to-individual %) (get-new-population (map #(error-function %) population) population-size 6))
 
 
 
@@ -512,8 +521,6 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
 
 (defn abs-difference-in-error-lists
   [l1 l2]
-  (println l1)
-  (println (first l1))
   (loop [l1 l1
          l2 l2
          final '()]
@@ -525,10 +532,21 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
 
 (defn get-error-list
   [individual]
-  (map #(if (= (:integer %) nil)
+  (map #(if (= (:integer %) '())
              1000
              (first (:integer %)))
              (map #(evaluate-one-case individual empty-push-state %) test-cases)))
+
+(def test-indi
+  {:program '(integer_% integer_-)
+   :errors []
+   :total-error 0})
+
+(def test-shit
+  {:exec '()
+   :integer '()
+   :string '()
+   :input {:in1 -3}})
 
 (defn regression-error-function
   "Takes an individual and evaluates it on some test cases. For each test case,
