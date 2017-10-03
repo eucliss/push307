@@ -431,16 +431,31 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   "
   [population generation]
   :STUB
+  (println)
   (println "-------------------------------------------------------")
   (printf  "                    Report for Generation %s           " generation)
+  (println)
   (println "-------------------------------------------------------")
 
   (let [best-prog (apply min-key #(% :total-error) population)]
-    (printf "Best program: %s" (best-prog :program))
+    (printf "Best program: ") ;; (printf "Best program: %s" (best-prog :program))
+    (println (best-prog :program))
+    (println)
     (printf "Best program size: %s" (count (best-prog :program)))
+    (println)
     (printf "Best total error: %s" (best-prog :total-error))
+    (println)
     (printf "Best errors: %s" (best-prog :errors))))
 
+;;   (printf "Total population error: %s" (reduce + (map #(% :total-error) (map regression-error-function %) yabo)))
+
+(defn report2
+  [pop gen]
+  (report pop gen)
+  (println)
+  (printf "Total population error: %s" (reduce + (map #(% :total-error) pop)))
+  (println)
+  (printf "Average program size: %s" (quot (reduce + (map #(count (% :program)) pop)) (count pop))))
 
 (defn init-population
   [size max-program-size]
@@ -473,7 +488,7 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   :STUB
   (loop [count 0
          population (map #(error-function %) (init-population population-size max-initial-program-size))]
-    (report population count)
+    (report2 population count)
     (if (>= count max-generations)
       nil
       (if (= 0 (apply min-key #(% :total-error) population) :total-error)
@@ -588,6 +603,6 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   [& args]
   (push-gp {:instructions instructions
             :error-function regression-error-function
-            :max-generations 500
+            :max-generations 100
             :population-size 200
             :max-initial-program-size 50}))
