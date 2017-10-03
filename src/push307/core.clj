@@ -437,6 +437,14 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   [size max-program-size]
   (map #(prog-to-individual %) (take size (repeatedly #(make-random-push-program instructions max-program-size)))))
 
+;; NOT TESTED
+(defn get-new-population
+  [population population-size tournament-size]
+  (loop [ new-pop '()]
+    (if (= (count new-pop) population-size)
+      new-pop
+      (recur (conj new-pop (select-and-vary population tournament-size))))))
+
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
   generates and evaluates new populations. Stops if it finds an
@@ -454,10 +462,18 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
    - max-initial-program-size (max size of randomly generated programs)"
   [{:keys [population-size max-generations error-function instructions max-initial-program-size]}]
   :STUB
-  (loop [count 0]
+  (loop [count 0
+         population (init-population population-size max-initial-program-size)]
+    ;;(report population count)
     (if (>= count max-generations)
       nil
-      (recur (+ count 1)))))
+      (recur (+ count 1)
+             (get-new-population (map #(error-function %) population) population-size 6)
+
+
+
+             ))))
+
 
 ;;;;;;;;;;
 ;; The functions below are specific to a particular problem.
