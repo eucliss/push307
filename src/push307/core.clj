@@ -260,7 +260,7 @@
       (cond
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
-        (= 'in1 element) (in1 push-state)
+        (= 'in1 element) (in1 push-state) ;; required b/c else statement applies first item in :exec stack and then pops it, so without this inputs just get removed form exec stack
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
         :else (pop-stack
                ((eval (first
@@ -491,10 +491,10 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
     (report2 population count)
     (if (>= count max-generations)
       nil
-      (if (= 0 (apply min-key #(% :total-error) population) :total-error)
+      (if (= 0 (get (apply min-key #(% :total-error) population) :total-error))
         :SUCCESS
         (recur (+ count 1)
-               (map #(error-function (prog-to-individual %)) (get-new-population (map #(error-function %) population) population-size 6))
+               (map #(error-function (prog-to-individual %)) (get-new-population (map #(error-function %) population) population-size 20))
 
 
 
@@ -523,8 +523,11 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
 (def init-ind
   (prog-to-individual testing-prog))
 
-(def test-cases
+(def test-cases-easy
   (list -3 -2 -1 0 1 2 3))
+
+(def test-cases
+  (list -50 -23 -18 -7 -3 -2 -1 0 1 2 3 7 18 23 50))
 
 (defn abs
   [x]
