@@ -317,6 +317,9 @@
    :string '("abc" "def")
    :input {:in1 4 :in2 6}})
 
+;;(def prog-A
+;;  (prog-to-individual '(in1 in2 in3)))
+
 (defn crossover
   "Crosses over two programs (note: not individuals) using uniform crossover.
   Returns child program."
@@ -343,6 +346,9 @@
    instructions]
   :STUB
   ;; Added instructions as a parameter
+  (println "UNIFORM ADDITION")
+  (println prog)
+  (println instructions)
   (let [child (reduce concat
                       (map (fn [x]
                              (if (prob-pick 0.05)
@@ -353,17 +359,37 @@
       child)))
 
 
+;;(defn uniform-deletion
+;;  "Randomly deletes instructions from program at some rate. Returns child program."
+;;  [prog]
+;;  :STUB
+;;  (filter #(not (prob-pick 0.05)) prog))
+
 (defn uniform-deletion
-  "Randomly deletes instructions from program at some rate. Returns child program."
-  [prog]
-  :STUB
-  (filter #(not (prob-pick 0.05)) prog))
+  [program]
+  (filter #(not (prob-pick 0.05 %)) program))
 
 (defn prog-to-individual
-  [prog]
+  ([prog]
   {:program prog
    :errors '[]
    :total-error 0})
+  ([prog error-list total-error]
+   {:program prog
+    :errors (first error-list)
+    :total-error (first error-list)}))
+
+(defn vector-to-individual
+  [ls]
+  (println "HELLO")
+  (println ls)
+  (prog-to-individual
+   (nth (first ls) 1)
+   (nth (nth ls 1) 1)
+   (nth (nth ls 2) 1)))
+
+;;(def testing-pop
+;;  (map #(regression-error-function %) (init-population 5 15)))
 
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
@@ -373,16 +399,13 @@
   [population
    tournament-size]
   :STUB
-  (let [seed (rand)
+  (let [seed 0.3
         parent1 (tournament-selection population tournament-size)
         parent2 (tournament-selection population tournament-size)]
     (cond
-      (< seed 0.5) (prog-to-individual
-                    (crossover parent1 parent2))    
-      (and (>= seed 0.5) (< 0.75)) (prog-to-individual
-                                    (uniform-addition parent1 parent2))
-      (>= seed 0.75) (prog-to-individual
-                      (uniform-deletion parent1)))))
+      (< seed 0.5) (crossover (:program parent1) (:program parent2))
+      (and (>= seed 0.5) (< 0.75)) (vector-to-individual (uniform-addition (:program parent1) (:program parent2)))
+      (>= seed 0.75) (vector-to-individual (uniform-deletion (:program parent1))))))
 
 (defn report
   "Reports information on the population each generation. Should look something
@@ -431,8 +454,10 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
    - max-initial-program-size (max size of randomly generated programs)"
   [{:keys [population-size max-generations error-function instructions max-initial-program-size]}]
   :STUB
-  )
-
+  (loop [count 0]
+    (if (>= count max-generations)
+      nil
+      (recur (+ count 1)))))
 
 ;;;;;;;;;;
 ;; The functions below are specific to a particular problem.
