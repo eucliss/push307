@@ -475,7 +475,7 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
          population (init-population population-size max-initial-program-size)]
     ;;(report population count)
     (if (>= count max-generations)
-      population
+      (regression-error-function (first population))
       (recur (+ count 1)
              (map #(prog-to-individual %) (get-new-population (map #(error-function %) population) population-size 6))
 
