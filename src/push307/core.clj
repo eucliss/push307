@@ -11,9 +11,24 @@
    :string '("abc" "def")
    :input {:in1 4 :in2 6}})
 
+(def example-push-state-input
+  {:exec '(in1 "hello miller" integer_+ integer_-)
+   :integer '(1 2 3 4 5 6 7)
+   :string '("abc" "def")
+   :input {:in1 4 :in2 6}})
+
 ; An example Push program
 (def example-push-program
   '(3 5 integer_* "hello" 4 "world" integer_-))
+
+(def example-push-program-input
+  '(3 5 integer_* "hello" in1 "world" integer_-))
+
+(def empty-state-with-in1
+  {:exec '()
+   :integer '()
+   :string '()
+   :input {:in1 4}})
 
 (def example-push-program2
   '(3 5 integer_* ("hello" 4) "world" integer_-))
@@ -148,23 +163,32 @@
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
   ;;:STUB
-  (push-to-stack state :exec ((state :input) :in1)))
+  (push-to-stack (pop-stack state :exec) :exec ((state :input) :in1)))
+  ;;(assoc state :exec (conj (rest (state :exec)) ((state :input) :in1))))
 
 (defn push-input
   "Takes a state and an input keyword and pushes the mapping of that input keyword to the
   top of the exec stack. We added this, not sure why you would have only one function for inputs
   or why you would set the input to nil"
   [state
-   input]
+   input] ;; input here is :in1 not something else like a string or int
   (let [input-val ((state :input) input)]
     (push-to-stack state :exec input-val)))
+
+(def single-int-state
+  {:exec '()
+   :integer '(1)
+   :string '()
+   :input {:in1 4}})
                       
 
 (defn integer_+
   "Adds the top two integers and leaves result on the integer stack.
   If integer stack has fewer than two elements, noops."
   [state]
-  (make-push-instruction state +' [:integer :integer] :integer))
+  (if (< (count (get state :integer)) 2)
+    (pop-stack state :exec)
+    (make-push-instruction state +' [:integer :integer] :integer)))
 
 ;;;; This is an example of what would be necessary to implement integer_+
 ;;;; without the useful helper function make-push-instruction.
@@ -183,14 +207,18 @@
   Note: the second integer on the stack should be subtracted from the top integer."
   [state]
   ;;:STUB
-  ;; This one is fucked actually
-  (make-push-instruction state -' [:integer :integer] :integer))
+  ;; make null pointers stop plz
+  (if (< (count (get state :integer)) 2)
+    (pop-stack state :exec)
+    (make-push-instruction state -' [:integer :integer] :integer)))
 
 (defn integer_*
   "Multiplies the top two integers and leaves result on the integer stack."
   [state]
   ;;:STUB
-  (make-push-instruction state *' [:integer :integer] :integer))
+  (if (< (count (get state :integer)) 2)
+    (pop-stack state :exec)
+    (make-push-instruction state *' [:integer :integer] :integer)))
 
 (defn divide_by_zero?
   [state]
@@ -204,9 +232,11 @@
   [state]
   ;;:STUB
   ;; this one might be brok too
-  (if (divide_by_zero? state)
-    (assoc state :integer (conj (get (pop-stack (pop-stack state :integer) :integer) :integer) 0))
-    (make-push-instruction state quot [:integer :integer] :integer)))
+  (if (< (count (get state :integer)) 2)
+    (pop-stack state :exec)
+    (if (divide_by_zero? state)
+      (assoc state :integer (conj (get (pop-stack (pop-stack state :integer) :integer) :integer) 0))
+      (make-push-instruction state quot [:integer :integer] :integer))))
 
 
 ;;;;;;;;;;
@@ -216,6 +246,8 @@
   [program state]
   (assoc state :exec (concat program (state :exec))))
 
+
+
 (defn interpret-one-step
   "Helper function for interpret-push-program.
   Takes a Push state and executes the next instruction on the exec stack,
@@ -223,17 +255,15 @@
   Returns the new Push state."
   [push-state]
   ;;:STUB
-  
-  ;;; TODO: Deal with inputs on the exec stack
   (if (not (empty-stack? push-state :exec))
     (let [element (peek-stack push-state :exec)]
-      (println push-state)
       (cond
         (instance? String element) (push-to-stack (pop-stack push-state :exec) :string element)
         (instance? Number element) (push-to-stack (pop-stack push-state :exec) :integer element)
+        (= 'in1 element) (in1 push-state) ;; required b/c else statement applies first item in :exec stack and then pops it, so without this inputs just get removed form exec stack
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec)))
         :else (pop-stack
-               ((resolve (first
+               ((eval (first
                          (get (get-args-from-stacks push-state '(:exec))
                               :args)))
                push-state) :exec)))
@@ -263,6 +293,16 @@
   (let [program-size (+ (rand-int max-initial-program-size) 1)]
     (repeatedly program-size #(rand-nth instructions))))
 
+;;(def testing-population
+;;  (init-population 3 3))
+
+;;(def testing-errors
+
+;; testing: (tournament-selection (map #(regression-error-function %) (init-population 3 3)) 3)
+
+;;(def testing-pop
+;;  (map #(regression-error-function %) (init-population 5 15)))
+
 (defn tournament-selection
   "Selects an individual from the population using a tournament. Returned 
   individual will be a parent in the next generation. Can use a fixed
@@ -278,18 +318,33 @@
   ([prob] (< (rand) prob))
   ([prob x] (prob-pick prob)))
 
+(def test-prog-A
+  {:exec '(in1 in2 in3 in4)
+   :integer '(1 2 3 4 5 6 7)
+   :string '("abc" "def")
+   :input {:in1 4 :in2 6}})
+(def test-prog-B
+  {:exec '(in5 "hello miller" integer_+ integer_-)
+   :integer '(1 2 3 4 5 6 7)
+   :string '("abc" "def")
+   :input {:in1 4 :in2 6}})
+
+;;(def prog-A
+;;  (prog-to-individual '(in1 in2 in3)))
+
 (defn crossover
   "Crosses over two programs (note: not individuals) using uniform crossover.
   Returns child program."
-  [prog-a prog-b]
+  [prog-a
+   prog-b]
   :STUB
   (loop [prog-a prog-a
          prog-b prog-b
          new '()]
     (if (empty? prog-a)
-      (concat new (filter #(prob-pick 0.5) prog-b))
+      (concat new (filter #(prob-pick 0.5 %) prog-b))
       (if (empty? prog-b)
-        (concat new (filter #(prob-pick 0.5) prog-a))
+        (concat new (filter #(prob-pick 0.5 %) prog-a))
         (recur (rest prog-a)
                (rest prog-b)
                (if (= (rand-int 2) 0)
@@ -303,27 +358,47 @@
    instructions]
   :STUB
   ;; Added instructions as a parameter
-  (let [child (reduce concat
-                      (map (fn [x]
-                             (if (prob-pick 0.05)
-                               (list x (nth instructions (rand-int (count instructions))))
-                               (list x))) prog))]
-    (if (prob-pick 0.05)
-      (conj child (nth instructions (rand-int (count instructions))))
-      child)))
+  (if (= prog ())
+    prog
+    (let [child (reduce concat
+                        (map (fn [x]
+                               (if (prob-pick 0.05)
+                                 (list x (nth instructions (rand-int (count instructions))))
+                                 (list x))) prog))]
+      (if (prob-pick 0.05)
+        (conj child (nth instructions (rand-int (count instructions))))
+        child))))
 
+
+;;(defn uniform-deletion
+;;  "Randomly deletes instructions from program at some rate. Returns child program."
+;;  [prog]
+;;  :STUB
+;;  (filter #(not (prob-pick 0.05)) prog))
 
 (defn uniform-deletion
-  "Randomly deletes instructions from program at some rate. Returns child program."
-  [prog]
-  :STUB
-  (filter #(not (prob-pick 0.05)) prog))
+  [program]
+  (filter #(not (prob-pick 0.05 %)) program))
 
 (defn prog-to-individual
-  [prog]
+  ([prog]
   {:program prog
    :errors '[]
    :total-error 0})
+  ([prog error-list total-error]
+   {:program prog
+    :errors (first error-list)
+    :total-error (first error-list)}))
+
+(defn vector-to-individual
+  [ls]
+  (prog-to-individual
+   (nth (first ls) 1)
+   (nth (nth ls 1) 1)
+   (nth (nth ls 2) 1)))
+
+;;(def testing-pop
+;;  (map #(regression-error-function %) (init-population 5 15)))
 
 (defn select-and-vary
   "Selects parent(s) from population and varies them, returning
@@ -334,15 +409,12 @@
    tournament-size]
   :STUB
   (let [seed (rand)
-        parent1 (tournament-selection population tournament-size)
-        parent2 (tournament-selection population tournament-size)]
+        parent1 (into () (:program (tournament-selection population tournament-size)))
+        parent2 (into () (:program (tournament-selection population tournament-size)))]
     (cond
-      (< seed 0.5) (prog-to-individual
-                    (crossover parent1 parent2))    
-      (and (>= seed 0.5) (< 0.75)) (prog-to-individual
-                                    (uniform-addition parent1 parent2))
-      (>= seed 0.75) (prog-to-individual
-                      (uniform-deletion parent1)))))
+      (< seed 0.5) (crossover parent1 parent2)
+      (and (>= seed 0.5) (< 0.75)) (uniform-addition parent1 parent2)
+      (>= seed 0.75) (uniform-deletion parent1))))
 
 (defn report
   "Reports information on the population each generation. Should look something
@@ -359,17 +431,43 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   "
   [population generation]
   :STUB
+  (println)
   (println "-------------------------------------------------------")
   (printf  "                    Report for Generation %s           " generation)
+  (println)
   (println "-------------------------------------------------------")
 
   (let [best-prog (apply min-key #(% :total-error) population)]
-    (printf "Best program: %s" (best-prog :program))
+    (printf "Best program: ") ;; (printf "Best program: %s" (best-prog :program))
+    (println (best-prog :program))
+    (println)
     (printf "Best program size: %s" (count (best-prog :program)))
+    (println)
     (printf "Best total error: %s" (best-prog :total-error))
+    (println)
     (printf "Best errors: %s" (best-prog :errors))))
 
+;;   (printf "Total population error: %s" (reduce + (map #(% :total-error) (map regression-error-function %) yabo)))
 
+(defn report2
+  [pop gen]
+  (report pop gen)
+  (println)
+  (printf "Total population error: %s" (reduce + (map #(% :total-error) pop)))
+  (println)
+  (printf "Average program size: %s" (quot (reduce + (map #(count (% :program)) pop)) (count pop))))
+
+(defn init-population
+  [size max-program-size]
+  (map #(prog-to-individual %) (take size (repeatedly #(make-random-push-program instructions max-program-size)))))
+
+;; NOT TESTED
+(defn get-new-population
+  [population population-size tournament-size]
+  (loop [ new-pop '()]
+    (if (= (count new-pop) population-size)
+      new-pop
+      (recur (conj new-pop (select-and-vary population tournament-size))))))
 
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
@@ -388,7 +486,19 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
    - max-initial-program-size (max size of randomly generated programs)"
   [{:keys [population-size max-generations error-function instructions max-initial-program-size]}]
   :STUB
-  )
+  (loop [count 0
+         population (map #(error-function %) (init-population population-size max-initial-program-size))]
+    (report2 population count)
+    (if (>= count max-generations)
+      nil
+      (if (= 0 (get (apply min-key #(% :total-error) population) :total-error))
+        :SUCCESS
+        (recur (+ count 1)
+               (map #(error-function (prog-to-individual %)) (get-new-population (map #(error-function %) population) population-size 20))
+
+
+
+             )))))
 
 
 ;;;;;;;;;;
@@ -404,6 +514,60 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   (+ (* x x x) x 3)
   )
 
+(def target-push-program
+  '(in1 in1 in1 integer_* integer_* integer_* in1 3 integer_+ integer_+))
+
+(def testing-prog
+  '(in1 1 integer_+))
+
+(def init-ind
+  (prog-to-individual testing-prog))
+
+(def test-cases-easy
+  (list -3 -2 -1 0 1 2 3))
+
+(def test-cases
+  (list -50 -23 -18 -7 -3 -2 -1 0 1 2 3 7 18 23 50))
+
+(defn abs
+  [x]
+  (if (< x 0)
+    (*' -1 x)
+    x))
+
+(defn evaluate-one-case
+  [individual state value]
+  (interpret-push-program (:program individual) (push-to-stack state :input value)))
+
+(defn abs-difference-in-error-lists
+  [l1 l2]
+  (loop [l1 l1
+         l2 l2
+         final '()]
+    (if (= (count l1) 0)
+      (reverse final)
+      (recur (rest l1)
+             (rest l2)
+             (conj final (abs (- (first l1) (first l2))))))))
+
+(defn get-error-list
+  [individual]
+  (map #(if (= (:integer %) '())
+             1000
+             (first (:integer %)))
+             (map #(evaluate-one-case individual empty-push-state %) test-cases)))
+
+(def test-indi
+  {:program '(integer_% integer_-)
+   :errors []
+   :total-error 0})
+
+(def test-shit
+  {:exec '()
+   :integer '()
+   :string '()
+   :input {:in1 -3}})
+
 (defn regression-error-function
   "Takes an individual and evaluates it on some test cases. For each test case,
   runs program with the input set to :in1 in the :input map part of the Push state.
@@ -416,7 +580,22 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   on the integer stack."
   [individual]
   :STUB
-  )
+  (let [target-list (map #(target-function %) test-cases)
+        program-list (get-error-list individual)
+        errors (abs-difference-in-error-lists target-list program-list)
+        ]
+    {:program (:program individual)
+     :errors errors
+     :total-error (reduce + errors)}))
+  ;; (push-to-stack empty-push-state :input 4)
+  ;; (interpret-push-program (:program empty-ind) (push-to-stack empty-push-state :input 4))
+  ;; (assoc init-ind :errors (into (vector) (difference-in-error-lists '(1 2 3) '(4 4 4))))
+
+  ;; Push the input to empty state
+  ;; evaluate the program in that state
+  ;; use last item in int stack as compare value
+  ;; compare it to errors list
+  
 
 
 ;;;;;;;;;;
@@ -427,6 +606,6 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   [& args]
   (push-gp {:instructions instructions
             :error-function regression-error-function
-            :max-generations 500
+            :max-generations 100
             :population-size 200
             :max-initial-program-size 50}))
