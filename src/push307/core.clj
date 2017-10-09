@@ -122,7 +122,7 @@
   (let [args-pop-result (get-args-from-stacks state arg-stacks)]
     (if (= args-pop-result :not-enough-args)
       state
-      (let [result (apply function (reverse (:args args-pop-result))) ;; this reverse line dont make sense to me
+      (let [result (apply function (reverse (:args args-pop-result)))
             new-state (:state args-pop-result)]
         (push-to-stack new-state return-stack result)))))
 
@@ -133,17 +133,10 @@
   "Pushes the input labeled :in1 on the inputs map onto the :exec stack.
   Can't use make-push-instruction, since :input isn't a stack, but a map."
   [state]
-  (push-to-stack (pop-stack state :exec) :exec ((state :input) :in1)))
+  (push-to-stack (pop-stack state :exec)      ;; Pop in1 from the exec stack
+                 :exec                        ;; and push :in1 from :input stack
+                 ((state :input) :in1)))        
   
-(defn push-input
-  "Takes a state and an input keyword and pushes the mapping of that input keyword to the
-  top of the exec stack. We added this, not sure why you would have only one function for inputs
-  or why you would set the input to nil"
-  [state
-   input] 
-  (let [input-val ((state :input) input)]
-    (push-to-stack state :exec input-val)))
-
 (def single-int-state
   {:exec '()
    :integer '(1)
@@ -187,6 +180,7 @@
     (make-push-instruction state *' [:integer :integer] :integer)))
 
 (defn divide_by_zero?
+  "Helper function for integer_%.  Makes sure we don't divide by 0."
   [state]
   (= (first (state :integer))) 0)
 
@@ -198,7 +192,11 @@
   (if (< (count (get state :integer)) 2)
     (pop-stack state :exec)
     (if (divide_by_zero? state) ;; Return the numerator to the int stack if dividing by 0, else division
-      (assoc state :integer (conj (get (pop-stack (pop-stack state :integer) :integer) :integer) (peek-stack state :integer)))
+      (assoc state :integer
+             (conj
+              (get (pop-stack (pop-stack state :integer) :integer)
+                   :integer)
+              (peek-stack state :integer)))
       (make-push-instruction state quot [:integer :integer] :integer))))
 
 
@@ -265,7 +263,7 @@
     (apply min-key #(% :total-error) tournament-members)))
 
 (defn prob-pick
-  "Determines whether we should do an action based on a probability, uses random number generation"
+  "Returns true [prob] amount of the time.  Need second case so we can use with filter."
   ([prob] (< (rand) prob))
   ([prob x] (prob-pick prob)))
 
@@ -309,6 +307,7 @@
   (filter #(not (prob-pick 0.05 %)) program))
 
 (defn prog-to-individual
+  "Takes a program and creates an individual with no error values or with error values if given."
   ([prog]  ;; Just converts program to individual with no errors
   {:program prog
    :errors '[]
@@ -325,8 +324,8 @@
   25% to uniform-addition, and 25% to uniform-deletion."
   [population
    tournament-size]
-  (let [seed (rand)
-        parent1 (into () (:program (tournament-selection population tournament-size)))
+  (let [seed (rand)    ;; Want to keep the same random number to base decision on
+        parent1 (into () (:program (tournament-selection population tournament-size)))    ;; Only want to select parents once, so save them
         parent2 (into () (:program (tournament-selection population tournament-size)))]
     (cond
       (< seed 0.5) (crossover parent1 parent2)
@@ -373,7 +372,7 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   (printf "Average program size: %s" (quot (reduce + (map #(count (% :program)) pop)) (count pop))))
 
 (defn init-population
-  "Initialize a population of random programs of a certain size"
+  "Initialize a population of random programs of a certain maximum size"
   [size max-program-size]
   ;; Creates individuals with no errors associated with them yet
   (map #(prog-to-individual %) (take size (repeatedly #(make-random-push-program instructions max-program-size)))))
@@ -381,10 +380,11 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
 (defn get-child-population
   "Creates the next generation using select-and-vary function on the previous generation"
   [population population-size tournament-size]
-  (loop [ new-pop '()]
+  (loop [new-pop '()]
     (if (= (count new-pop) population-size)
       new-pop
-      (recur (conj new-pop (select-and-vary population tournament-size))))))
+      (recur (conj new-pop
+                   (select-and-vary population tournament-size))))))
 
 (defn push-gp
   "Main GP loop. Initializes the population, and then repeatedly
