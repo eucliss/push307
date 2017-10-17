@@ -52,8 +52,8 @@
    :input {}})
 
 (def full-state
-  {:exec '(integer_+ integer_-)
-   :integer '(2 1 3 4)
+  {:exec '(integer_+ integer_%)
+   :integer '(1 2 3 4 5 6)
    :string '("hi" "hello" "bye")
    :input {:in1 4 :in2 "nice"}})
 
@@ -144,13 +144,18 @@
    :input {:in1 4}})
                       
 
-(defn integer_+
+(defn integer_+2
   "Adds the top two integers and leaves result on the integer stack.
   If integer stack has fewer than two elements, noops."
   [state]
   (if (< (count (get state :integer)) 2) ;; conditional to make sure there are enough ints on the stack
     (pop-stack state :exec)
     (make-push-instruction state +' [:integer :integer] :integer)))
+
+(defn integer_+
+  [state]
+  (make-push-instruction state +' [:integer :integer] :integer))
+
 
 ;;;; This is an example of what would be necessary to implement integer_+
 ;;;; without the useful helper function make-push-instruction.
@@ -164,7 +169,7 @@
 ;;       (push-to-stack popped-twice :integer (+' arg1 arg2)))))
 
 
-(defn integer_-
+(defn integer_-2
   "Subtracts the top two integers and leaves result on the integer stack.
   Note: the second integer on the stack should be subtracted from the top integer."
   [state]
@@ -172,17 +177,26 @@
     (pop-stack state :exec)
     (make-push-instruction state -' [:integer :integer] :integer)))
 
-(defn integer_*
+(defn integer_-
+  [state]
+  (make-push-instruction state -' [:integer :integer] :integer))
+  
+
+(defn integer_*2
   "Multiplies the top two integers and leaves result on the integer stack."
   [state]
   (if (< (count (get state :integer)) 2)
     (pop-stack state :exec)
     (make-push-instruction state *' [:integer :integer] :integer)))
 
+(defn integer_*
+  [state]
+  (make-push-instruction state *' [:integer :integer] :integer))
+
 (defn divide_by_zero?
   "Helper function for integer_%.  Makes sure we don't divide by 0."
   [state]
-  (= (first (state :integer))) 0)
+  (zero? (first (state :integer))))
 
 (defn integer_%
   "This instruction implements 'protected division'.
@@ -190,7 +204,7 @@
   denominator is 0, it returns the numerator, to avoid divide-by-zero errors."
   [state]
   (if (< (count (get state :integer)) 2)
-    (pop-stack state :exec)
+    state
     (if (divide_by_zero? state) ;; Return the numerator to the int stack if dividing by 0, else division
       (assoc state :integer
              (conj
@@ -224,10 +238,8 @@
         (= 'in1 element) (in1 push-state) ;; required b/c else statement applies first item in :exec stack and then pops it, so without this inputs just get removed form exec stack
         (seq? element) (interpret-one-step (load-exec element (pop-stack push-state :exec))) ;; Nested isntructions
         :else (pop-stack ;; This is for symbols ( integer_+, integer_-, ...)
-               ((eval (first
-                         (get (get-args-from-stacks push-state '(:exec))
-                              :args)))
-               push-state) :exec)))
+               ((eval (peek-stack push-state :exec)) 
+                push-state) :exec)))
     push-state))
 
 (defn interpret-push-program
@@ -329,7 +341,7 @@
         parent2 (into () (:program (tournament-selection population tournament-size)))]
     (cond
       (< seed 0.5) (crossover parent1 parent2)
-      (and (>= seed 0.5) (< 0.75)) (uniform-addition parent1 parent2)
+      (and (>= seed 0.5) (< seed 0.75)) (uniform-addition parent1 parent2)
       (>= seed 0.75) (uniform-deletion parent1))))
 
 (defn report
@@ -474,7 +486,7 @@ Best errors: (117 96 77 60 45 32 21 12 5 0 3 4 3 0 5 12 21 32 45 60 77)
   Note: You must consider what to do if the program doesn't leave anything
   on the integer stack."
   [individual]
-  (let [target-list (map #(target-function %) test-cases) ;; List of solutions for the target function
+  (let [target-list (map #(target-function %) test-cases-easy) ;; List of solutions for the target function
         program-list (get-solution-list individual) ;; List solutions for given individual
         errors (abs-difference-in-solution-lists target-list program-list) ;; Calculates errors
         ]
