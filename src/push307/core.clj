@@ -325,8 +325,8 @@
   [population
    tournament-size]
   (let [seed (rand)    ;; Want to keep the same random number to base decision on
-        parent1 (into () (:program (tournament-selection population tournament-size)))    ;; Only want to select parents once, so save them
-        parent2 (into () (:program (tournament-selection population tournament-size)))]
+        parent1 (:program (tournament-selection population tournament-size))   ;; Only want to select parents once, so save them
+        parent2 (:program (tournament-selection population tournament-size))]
     (cond
       (< seed 0.5) (crossover parent1 parent2)
       (and (>= seed 0.5) (< 0.75)) (uniform-addition parent1 parent2)
